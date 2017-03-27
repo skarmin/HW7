@@ -7,7 +7,7 @@ import re
 import tweepy
 import twitter_info # still need this in the same directory, filled out
 
-## Make sure to comment with:
+## Make sure to comment with: Bruestien
 # Your name: Sam Karmin
 # The names of any people you worked with for this assignment:
 
@@ -54,7 +54,22 @@ except:
 
 # Your function must cache data it retrieves and rely on a cache file!
 # Note that this is a lot like work you have done already in class (but, depending upon what you did previously, may not be EXACTLY the same, so be careful your code does exactly what you want here).
+def get_user_tweets(username):
+	unique_identifier = "twitter_{}".format(username)
 
+	if unique_identifier in CACHE_DICTION:
+		print('using cahced data for', username)
+		twitter_results = CACHE_DICTION[unique_identifier]
+	else:
+		print('getting data from internet for', username)
+		twitter_results = api.user_timeline(username)
+		CACHE_DICTION[unique_identifier] = twitter_results
+
+		f = open(CACHE_FNAME, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+
+	return twitter_results[:20]
 
 
 
@@ -71,66 +86,40 @@ except:
 # Below we have provided interim outline suggestions for what to do, sequentially, in comments.
 
 # Make a connection to a new database tweets.db, and create a variable to hold the database cursor.
-
+conn = sqlite3.connect('tweets.db')
+cur = conn.cursor()
 
 # Write code to drop the Tweets table if it exists, and create the table (so you can run the program over and over), with the correct (4) column names and appropriate types for each.
 # HINT: Remember that the time_posted column should be the TIMESTAMP data type!
 
-
+cur.execute('DROP TABLE IF EXISTS TWEETS')
+table_spec = 'CREATE TABLE IF NOT EXISTS '
+table_spec += 'Tweets (tweet_id INTEGER PRIMARY KEY, '
+table_spec += 'author TEXT, time_posted TIMESTAMP, tweet_text TEXT, retweets INTEGER)'
+cur.execute(table_spec)
 # Invoke the function you defined above to get a list that represents a bunch of tweets from the UMSI timeline. Save those tweets in a variable called umsi_tweets.
-
+umsi_tweets = get_user_tweets("UMSI")
 
 
 
 # Use a for loop, the cursor you defined above to execute INSERT statements, that insert the data from each of the tweets in umsi_tweets into the correct columns in each row of the Tweets database table.
 
 # (You should do nested data investigation on the umsi_tweets value to figure out how to pull out the data correctly!)
-
+statement = 'INSERT INTO Tweets VALUES (?, ?, ?, ?, ?)'
+for tweet in umsi_tweets:
+	T = (tweet['id'],tweet['user']['screen_name'],tweet['created_at'], tweet['text'],tweet['retweet_count'])
+	cur.execute(statement, T)
 
 
 
 # Use the database connection to commit the changes to the database
-
+conn.commit()
+    
 
 
 # You can check out whether it worked in the SQLite browser! (And with the tests.)
 
 
-
-## [PART 2] - SQL statements
-
-## In this part of the homework, you will write a number of Python/SQL statements to get data from the database, as directed. For each direction, write Python code that includes an SQL statement that will get the data from your database. 
-## You can verify whether your SQL statements work correctly in the SQLite browser! (And with the tests)
-
-
-# Select from the database all of the TIMES the tweets you collected were posted and fetch all the tuples that contain them in to the variable tweet_posted_times.
-
-
-# Select all of the tweets (the full rows/tuples of information) that have been retweeted MORE than 2 times, and fetch them into the variable more_than_2_rts.
-
-
-
-# Select all of the TEXT values of the tweets that are retweets of another account (i.e. have "RT" at the beginning of the tweet text). Save the FIRST ONE from that group of text values in the variable first_rt. Note that first_rt should contain a single string value, not a tuple.
-
-
-
-# Finally, done with database stuff for a bit: write a line of code to close the cursor to the database.
-
-
-
-## [PART 3] - Processing data
-
-# Define a function get_twitter_users that accepts a string as in put and returns a SET of the _twitter screennames_ of each twitter user who was mentioned in that string. 
-
-# Note that the syntax for mentions in a tweet is that the username is preceded by an "@" character, e.g. "@umsi" or "@aadl", and cannot contain any punctuation besides underscores -- that's how to determine what user names are mentioned. (e.g. @hello? is just the username "hello", but @programmer_at_umsi is "programmer_at_umsi"). 
-
-#re.match and getting the 0th group from the MatchObject may be useful for you here... reminder: http://stackoverflow.com/questions/15340582/python-extract-pattern-matches
-
-# You may assume for this problem that there will be no usernames directly in order, e.g. "@hello@goodbye", only "@hello and @goodbye" for example. We will iterate on this later!
-
-# Also note that the SET type is what this function should return, NOT a list or tuple. We looked at very briefly at sets when we looked at set comprehensions last week. In a Python 3 set, which is a special data type, it's a lot like a combination of a list and a dictionary: no key-value pairs, BUT each element in a set is by definition unique. You can't have duplicates.
-
-# If you want to challenge yourself here -- this function definition (what goes under the def statement) CAN be written in one line! Definitely, definitely fine to write it with multiple lines, too, which will be much easier and clearer.
 
 
 
